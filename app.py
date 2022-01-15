@@ -1,21 +1,31 @@
-from flask import Flask, redirect, url_for, render_template, request, session
+import json
+
+from MySQLdb.constants.FIELD_TYPE import JSON
+from django.contrib.sites import requests
+from flask import Flask, redirect, url_for, render_template, request, session, flash, jsonify
+from interact_with_DB import interact_db
+from pages.assignment10.assignment10 import assignment10
+import requests
 
 app = Flask(__name__)
 app.secret_key = "123"
 
+
 def set_users():
     users_list = [{'first name': 'Yossi', 'last name': 'Cohen', 'email': 'yo@gmail.com'},
-             {'first name': 'Aharon', 'last name': 'Aharoni', 'email': 'ah@gmail.com'},
-             {'first name': 'Oren', 'last name': 'Hazanov', 'email': 'or@gmail.com'},
-             {'first name': 'Ahlan', 'last name': 'Dvori', 'email': 'ahdv@gmail.com'},
-             {'first name': 'Amihai', 'last name': 'Yossi', 'email': 'ah@gmail.com'}]
+                  {'first name': 'Aharon', 'last name': 'Aharoni', 'email': 'ah@gmail.com'},
+                  {'first name': 'Oren', 'last name': 'Hazanov', 'email': 'or@gmail.com'},
+                  {'first name': 'Ahlan', 'last name': 'Dvori', 'email': 'ahdv@gmail.com'},
+                  {'first name': 'Amihai', 'last name': 'Yossi', 'email': 'ah@gmail.com'}]
     return users_list
+
 
 @app.route('/home_page', methods=['GET', 'POST'])
 @app.route('/home')
 @app.route('/')
 def home_page():
     return render_template('cv.html')
+
 
 @app.route('/assignment8', methods=['GET', 'POST'])
 def details():
@@ -25,10 +35,12 @@ def details():
                            visited_places=['costa rica', 'brazil', 'Peru', 'argentina', 'amsterdam'],
                            like_the_course=True)
 
+
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.clear()
     return render_template('assignment9.html')
+
 
 @app.route('/assignment9', methods=['GET', 'POST'])
 def forms():
@@ -39,7 +51,8 @@ def forms():
             matches = []
             if search_key:
                 for user in users_list:
-                    if user["first name"] == search_key or user["last name"] == search_key or user["email"] == search_key:
+                    if user["first name"] == search_key or user["last name"] == search_key or user[
+                        "email"] == search_key:
                         matches.append(user)
             else:
                 matches = users_list
@@ -59,6 +72,36 @@ def forms():
     if session.get('login'):
         return render_template('assignment9.html', nick_name=session.get('nickname'))
     return render_template('assignment9.html')
+
+
+# assignment10
+app.register_blueprint(assignment10)
+
+@app.route('/assignment11/users')
+def json_users_func():
+    query = "select * from users"
+    users_query = interact_db(query=query, query_type='fetch')
+    json_users = jsonify(users_query)
+    return json_users
+
+@app.route('/assignment11/outer_source',  methods=['GET', 'POST'])
+def assignment11_outer_source():
+    return render_template('assignment11_outsource.html')
+
+@app.route('/req_frontend', methods=['POST'])
+def req_frontend_func():
+    user_id = request.form['id']
+    return render_template('assignment11_outsource.html', id=user_id)
+
+@app.route('/req_backend')
+def req_backend_func():
+    user=0
+    if "user_id" in request.args and request.args['user_id']!='':
+        user = request.args['user_id']
+    res = requests.get(f'https://reqres.in/api/users/{user}')
+    res = res.json()
+    return render_template('assignment11_outsource.html', user = res)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
